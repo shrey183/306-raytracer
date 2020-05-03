@@ -226,9 +226,6 @@ void TriangleMesh::scale_model(){
 		vertices[triangle.vtxj] = vertices[triangle.vtxj] * 0.6 + Vector(0, -10, 0);
 		vertices[triangle.vtxk] = vertices[triangle.vtxk] * 0.6 + Vector(0, -10, 0);
 
-		normals[triangle.ni] = normals[triangle.ni] * 0.6 + Vector(0, -10, 0);
-		normals[triangle.nj] = normals[triangle.nj] * 0.6 + Vector(0, -10, 0);
-		normals[triangle.nk] = normals[triangle.nk] * 0.6 + Vector(0, -10, 0);
 	}
 }
 
@@ -251,27 +248,28 @@ bool TriangleMesh::intersection(Ray ray, Intersection& rec) const{
 
 			Vector e1 = B - A;
 			Vector e2 = C - A;
-			Vector temp = cross(e1, e2);
-			double det = dot(-u, temp);
-			if (fabs(det) < ERROR) continue;
+			Vector N = cross(e1, e2);
+			auto cp = cross((A-O),u);
+			auto denom = dot(u,N);
+			if(denom == 0) continue;
 
-			double t = dot( (O - A), temp)/det;
-			double alpha = -dot(u, cross((O-A), e2))/det;
-			double beta = -dot(u, cross(e1, O-A))/det;
+			auto beta = dot(e2,cp)/denom;
+			auto gamma = -(dot(e1,cp)/denom);
+			auto alpha = 1 - beta - gamma;
+			auto t = dot((A-O),N)/denom;
 
-			// Point P = gamma A + alpha B + beta C
-
-			if(t > 0 && alpha > 0 && beta > 0 && alpha + beta < 1 && t < closest_so_far){
-				double gamma = 1 - alpha - beta;
-				rec.inter = gamma * A + alpha * B + beta * C;
+			if(0 <= alpha && alpha <= 1 && 0 <= beta && beta <= 1 && 0 <= gamma && gamma <= 1 && t < closest_so_far){
+				rec.inter = alpha * A + beta * B + gamma * C;
 				rec.t = t;
-				rec.Normal = (gamma * normals[triangle.ni] + alpha * normals[triangle.nj]
-										 + beta* normals[triangle.nk]).normalize();
-				rec.albedo = Vector(1., 1., 1.); // default color right now
+				rec.Normal = alpha * normals[triangle.ni] + beta * normals[triangle.nj]
+										 + gamma* normals[triangle.nk];
+				rec.albedo = Vector(255., 255., 255.); // default color right now
 				rec.material = 0; // default material value right now
 				rec.check = true;
 				hit_anything = true;
 			}
+
 		}
+
     return hit_anything;
 }

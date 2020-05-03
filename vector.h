@@ -76,6 +76,9 @@ class Vector {
 	Vector operator*(const Vector &v, double t) {
 	    return t * v;
 	}
+	Vector operator/(const Vector &v, double t) {
+			return v * (1./t);
+	}
 
 	Vector operator-(const Vector &u, const Vector &v) {
 	    return Vector(u[0] - v[0], u[1] - v[1], u[2] - v[2]);

@@ -10,9 +10,8 @@ public:
 	Vector color;
 	float intensity;
 
-	explicit Light(Vector origin=Vector(), Vector col=Vector(), float intense=0.){
+	explicit Light(Vector origin=Vector(), float intense=0.){
 		O = origin;
-		color = col;
 		intensity = intense;
 	}
 };
