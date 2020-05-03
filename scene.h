@@ -25,9 +25,7 @@ public:
 public:
 	vector<shared_ptr<Geometry> > Sph;
 	Light lsource;
-	//some general variables for the scene
-	float epsilon = 0.01;
-	int max_depth = 50;
+	double epsilon = 0.001;
 };
 
 bool Scene::intersection(Ray ray, Intersection& rec) const{
@@ -74,7 +72,7 @@ Vector Scene::get_colors(Ray ray, int ray_depth){
 				return get_colors(scattered, ray_depth - 1);
 			}
 
-			if(rec.material == 2 or rec.material == 3){
+			else if(rec.material == 2 or rec.material == 3){
 				// transparent surface
 				double n1 = 1.;
 				double n2 = 1.5;
@@ -89,7 +87,7 @@ Vector Scene::get_colors(Ray ray, int ray_depth){
 
 				double R = schlick(dot(Normal,ray.u), ref_index);
 				double T = 1 - R;
-        auto u = random_double();
+        auto u = uniform(engine);
 
         if (u < R){
 						// Reflect
@@ -114,23 +112,25 @@ Vector Scene::get_colors(Ray ray, int ray_depth){
 			else
 			{
 				// Diffuse Surfaces
-				Vector omega = lsource.O+rec.inter*(-1);
-				ray.O = P;
-				ray.u = omega.normalize();
-	      Intersection secd_intersect;
-				bool hit_anything = intersection(ray, secd_intersect);
+				Vector omega = lsource.O - P;
 				double d = omega.norm();
+				omega = omega*(1./d);
+				Ray scnd_ray = Ray(lsource.O, -omega);
+				Intersection secd_intersect;
+				bool hit_anything = intersection(scnd_ray, secd_intersect);
 				bool visible = secd_intersect.t > d;
 				Vector Lo = rec.albedo * visible * (lsource.intensity/
 										(4*M_PI*pow(d,2))*
-										max(dot(Normal,omega.normalize()),0.0)/M_PI);
+										max(dot(Normal,omega),0.0)/M_PI);
 
 				// Add Indirect Lighting here
 				Ray randomRay = Ray(P, random_cos(Normal));
-				Lo += rec.albedo * get_colors(randomRay, ray_depth - 1);
+				Vector x = get_colors(randomRay, ray_depth - 1);
+				Lo = Lo +  rec.albedo * x;
 				return Lo;
 			}
 
 
 		}
+		return Vector(0., 0., 0.);
 	}

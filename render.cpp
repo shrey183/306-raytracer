@@ -22,7 +22,7 @@ Scene make_scene(){
 	Vector YELLOW =  Vector(255.,255.,0.);
 
 	float intensity = 2*pow(10, 7);
-	Light lsource(Vector(-20., 20., 40.),Vector(), intensity);
+	Light lsource(Vector(-10., 20., 40.), intensity);
 	Scene scene;
 	scene.set_light(lsource);
 
@@ -35,6 +35,8 @@ Scene make_scene(){
 	scene.add(make_shared<Sphere>(Vector(-1000.,0.,0.),940, CYAN));
 	scene.add(make_shared<Sphere>(Vector(0.,0.,0.),940, YELLOW));
 
+	scene.add(make_shared<Sphere>(Vector(0.,0.,0.), 10, WHITE));
+
 
 	// Sphere with Reflection
 	scene.add(make_shared<Sphere>(Vector(-20.,0.,0.),10, WHITE, 1));
@@ -45,12 +47,15 @@ Scene make_scene(){
 	// Hollow Sphere
 	scene.add(make_shared<Sphere>(Vector(20.,0.,0.),10, WHITE, 3));
 	scene.add(make_shared<Sphere>(Vector(20.,0.,0.),-9.5, WHITE, 3));
+	
+
 	/*
 	auto tm = make_shared<TriangleMesh>();
 	tm->readOBJ("cadnav.com_model/Models_F0202A090/cat.obj");
 	tm->scale_model();
 	scene.add(tm);
 	*/
+
 	return scene;
 
 }
@@ -63,7 +68,7 @@ int main(){
 
 
 	/***
-	1) FRESNEL: Time taken 118732 seconds with 50 samples per pixel.
+	1) Fresnel
 	2) Indirect Lighting
 	3) Antialising
 	***/
@@ -83,14 +88,18 @@ int main(){
 
 
 
-	int num_samples = 50;
-	int max_depth = 50;
+	int num_samples = 32;
+	int max_depth = 5;
 	double std = 0.5;
 
 	int counter = 0;
 	unsigned char grid[W*H*3]; // of H*W*3 elements
 
 	auto t_start = std::chrono::high_resolution_clock::now();
+	/*
+	// For some reason this does not work on Mac, even with the correct flags
+	#pragma omp parallel for schedule(dynamic, 1)
+	*/
 	for(int i =0;i < H;i++)
 	{
 		std::cerr << "\rScanlines remaining: " << H - i - 1 << ' ' << std::flush;
@@ -100,9 +109,10 @@ int main(){
 
 			for(int k = 0; k < num_samples; k++)
 			{
+
 				double x = (double)i;
 				double y = (double)j;
-				boxMuller(std, x, y);
+				//boxMuller(std, x, y);
 				Ray first_ray = cam.get_ray(y, H - x - 1);
 				color += scene.get_colors(first_ray, max_depth);
 			}
@@ -116,7 +126,7 @@ int main(){
 		}
 	}
 	auto t_end = std::chrono::high_resolution_clock::now();
-	stbi_write_png("IndirectLighting.png", W,H, 3, grid, W * 3);
+	stbi_write_png("IndirectLight.png", W,H, 3, grid, W * 3);
 	double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-	std::cout << "Print Total Time: " << elapsed_time_ms << std::endl;
+	std::cout << "Print Total Time (in seconds): " << elapsed_time_ms/1000 << std::endl;
 }
